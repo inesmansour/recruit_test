@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <title>Test</title>
+
+        <!-- KockoutJS : https://knockoutjs.com -->
+        <script src="http://ajax.aspnetcdn.com/ajax/knockout/knockout-3.5.0.js"></script>
+
+        <!-- Bootstrap : https://getbootstrap.com/docs/4.6/ -->
+        <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.1/dist/jquery.slim.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
+
+        <!-- ChartJS : https://www.chartjs.org -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    </head>
+    <body>
+        <div class="container p-4">
+            <ul class="nav nav-pills">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Products</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="#">Products by category</a>
+                </li>
+            </ul>
+            
+            <div class="card my-2">
+                <div class="card-body text-center">
+                    <canvas style="max-height: 200px" id="graph1"></canvas>
+                </div>
+            </div>
+
+            <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col">Product</th>
+                    <th scope="col" class="text-right">Latest Price</th>
+                  </tr>
+                </thead>
+                <tbody data-bind="foreach: categories">
+                    <tr class="bg-light font-weight-bold user-select-none" data-bind="click: ()=>collapsed(!collapsed())">
+                        <td colspan="2">
+                            <span data-bind="text: data().name"></span>
+                            <span class="float-right badge" data-bind="text: data().products.length, css: { 'badge-secondary': !collapsed(), 'badge-primary': collapsed }"></span>
+                        </td>
+                    </tr>
+                    <!-- ko if: !collapsed() -->
+                        <!-- ko foreach: data().products -->
+                            <tr>
+                                <td data-bind="text: name"></td>
+                                <td data-bind="text: $root.format(price_EUR_per_kg)" class="text-right"></td>
+                            </tr>
+                        <!-- /ko -->
+                    <!-- /ko -->
+                </tbody>
+            </table>
+
+            <script>
+                class Category {
+                    constructor(data) {
+                        this.data = ko.observable(data);
+                        this.collapsed = ko.observable(true);
+                    }
+                }
+                
+                class ProductTable {
+                    constructor() {
+                        this.formatter = new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: 'EUR',
+                            minimumFractionDigits:2,
+                            maximumFractionDigits:2,
+                        });
+
+                        this.categories = ko.observableArray();
+                        this.refreshing = ko.observable(false);
+
+                        this.graph = this.makeGraph('graph1');
+                        this.graphData = ko.computed(()=>{
+                            let categories = this.categories();
+                            return {
+                                labels: categories.map(it => it.data().name),
+                                data: categories.map(it => it.data().products.length)
+                            };
+                        }, this);
+                        this.graphData.subscribe((newValue) => {
+                            this.graph.data.labels = newValue.labels;
+                            this.graph.data.datasets[0].data = newValue.data;
+                            this.graph.update();
+                        });
+                    }
+
+                    format(value) {
+                        return this.formatter.format(value);
+                    }
+
+                    makeGraph(canvasId) {
+                        const graphData = { labels: [], datasets: [{
+                            data: [],
+                            backgroundColor: [
+                                '#006FB9',
+                                '#52B39C',
+                                '#FF9A00',
+                                '#2AABE4',
+                                '#234C43',
+                                '#FFBB42',
+                            ]
+                        }] };
+                        return new Chart(canvasId, {
+                            type: 'bar',
+                            data: graphData,
+                            options: {
+                                plugins: { legend: {display: false} }
+                            }
+                        });
+                    }
+
+                    refresh() {
+                        this.refreshing(true);
+
+                        fetch('/api/categories/')
+                            .then(response => response.json())
+                            .then(result => this.categories(result.map(it => new Category(it))))
+                            .finally(()=>this.refreshing(false));
+                    }
+                };
+
+                //---
+
+                let productTable = new ProductTable();
+                ko.applyBindings(productTable);
+
+                productTable.refresh();
+            </script>
+        </div>
+    </body>
+</html>
