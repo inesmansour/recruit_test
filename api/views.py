@@ -1,17 +1,35 @@
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from datetime import datetime
 
 from api.models import ProductCategory, Product, PricingLog
 from api import serializers
+from rest_framework.views import APIView
 
 from django.utils import timezone
 import random
 
 
-class ProductViewSet(viewsets.ReadOnlyModelViewSet):
+class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all().order_by('-date_created')
     serializer_class = serializers.ProductWithPricingHistorySerializer
+
+    def partial_update(self, request, pk=None):
+        data = request.data
+        product_object = Product.objects.get(id=pk)
+        pricing_history = PricingLog.objects.create(date_created = datetime.now(), product = product_object, price_EUR_per_kg = product_object.price_EUR_per_kg )
+
+        product_object.price_EUR_per_kg = request.data.get("price_EUR_per_kg", product_object.price_EUR_per_kg)
+
+        product_object.save()
+
+        serializer = serializers.ProductWithPricingHistorySerializer(request, data=request.data)
+
+        if serializer.is_valid():
+            print("valid")
+
+        return Response(serializer.data)
 
 class ProductCategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ProductCategory.objects.all().order_by('name')
