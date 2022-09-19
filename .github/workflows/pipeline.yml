@@ -1,0 +1,46 @@
+
+name: Test workflow Django
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+      - develop #for testing on the develop branch
+
+jobs:
+  build: 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code 
+        uses: actions/checkout@v2
+      - name: Cache dependency 
+        uses: actions/cache@v2 
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      - name: Setup python environment 
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x' 
+      - name: Check Python version 
+        run: python --version
+      - name: Install requirements 
+        run: pip install -r requirements.txt
+      - name: Check Syntax
+        run: pycodestyle --statistics .
+      # - name: Run Test # running tests
+      #   run: python manage.py test
+      - uses: actions/checkout@v2
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build Docker image
+        run: docker build . -t inesmansour/ugoTest:latest
+      - name: Push Docker image 
+        run: docker push inesmansour/ugoTest:latest
