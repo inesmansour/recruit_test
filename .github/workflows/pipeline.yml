@@ -7,7 +7,7 @@ on:
   push:
     branches:
       - master
-      - develop #for testing on the develop branch
+      - develop #for testing on the develop
 
 jobs:
   build: 
@@ -29,9 +29,12 @@ jobs:
       - name: Check Python version 
         run: python --version
       - name: Install requirements 
-        run: pip install -r requirements.txt
-      - name: Check Syntax
-        run: pycodestyle --statistics .
+        run: |
+          python -m pip install --upgrade pip
+          pip install pycodestyle
+          pip install -r requirements.txt 
+      # - name: Check Syntax
+      #   run: pycodestyle --statistics .
       # - name: Run Test # running tests
       #   run: python manage.py test
       - uses: actions/checkout@v2
@@ -41,6 +44,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build Docker image
-        run: docker build . -t inesmansour/ugoTest:latest
+        run: docker build . -t inesmansour/ugotest:latest
       - name: Push Docker image 
-        run: docker push inesmansour/ugoTest:latest
+        run: docker push inesmansour/ugotest:latest
