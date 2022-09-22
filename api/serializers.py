@@ -19,7 +19,7 @@ class ProductWithPricingHistorySerializer(serializers.HyperlinkedModelSerializer
 
     class Meta:
         model = models.Product
-        fields = ['url', 'name', 'category', 'price_EUR_per_kg', 'date_created', 'date_changed', 'pricing_history']
+        fields = ['id','url', 'name', 'category', 'price_EUR_per_kg', 'date_created', 'date_changed', 'pricing_history']
 
 class ProductCategoryWithProductsSerializer(serializers.HyperlinkedModelSerializer):
     products = ProductWithPricingHistorySerializer(many=True)

@@ -8,6 +8,5 @@ router.register(r'categories', views.ProductCategoryViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-
-    path('populate', views.debug_populate),
+    path('populate', views.debug_populate)
 ]
